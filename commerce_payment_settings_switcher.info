@@ -1,0 +1,4 @@
+name = Commerce Payment Settings Switcher
+description = Override payment settings using variables.
+core = 7.x
+package = "Custom"

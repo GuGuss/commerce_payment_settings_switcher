@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * Implements hook_entity_load().
+ */
+function commerce_payment_settings_switcher_entity_load($entities, $type) {
+  // If Paypal credentials are overriden somewhere, let's use them.
+  if ($type == 'rules_config' && is_array(variable_get('paypal_settings', FALSE))) {
+    foreach ($entities as $entity) {
+      if (method_exists($entity, 'actions')) {
+        foreach ($entity->actions() as $action) {
+          if ($action instanceof RulesAction && $action->getElementName() == 'commerce_payment_enable_paypal_wps') {
+            // Can't be merged by classicals ways.
+            if (!is_string($action->settings['payment_method'])) {
+              foreach (variable_get('paypal_settings', array()) as $key => $value) {
+                $action->settings['payment_method']['settings'][$key] = $value;
+              }
+            }
+            $action->processSettings(TRUE);
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_commerce_payment_method_info_alter().
+ */
+function commerce_payment_settings_switcher_commerce_payment_method_info_alter(&$payment_methods) {
+  if (isset($payment_methods['paypal_wps'])) {
+    // Adding a callback method to the Paypal WPS setting form.
+    $payment_methods['paypal_wps']['callbacks']['settings_form'] = 'alter_commerce_paypal_wps_settings_form';
+  }
+}
+
+/**
+ * (Not a hook) Alter the settings form of Paypal WPS.
+ */
+function alter_commerce_paypal_wps_settings_form($settings = NULL) {
+  $form = commerce_paypal_wps_settings_form($settings);
+  $display_message = FALSE;
+  // Disable the fields that are overriden in settings.local.php.
+  foreach (variable_get('paypal_settings', array()) as $key => $setting) {
+    if (isset($form[$key])) {
+      $form[$key]['#disabled'] = TRUE;
+      $form[$key]['#required'] = FALSE;
+      $display_message = TRUE;
+    }
+  }
+  // If some fields are overriden, display a message to warn the user. 
+  if ($display_message) {
+    $form['fields_alert'] = array(
+      '#type' => 'markup',
+      '#prefix' => '<div><b style="color:red;">',
+      '#suffix' => '</b></div>',
+      '#markup' => t('Some fields are defined in your settings.local.php and can\'t be overidden.'),
+      '#weight' => 0,
+    );
+  }
+
+  return $form;
+}
