@@ -4,7 +4,7 @@
  * Implements hook_entity_load().
  */
 function commerce_payment_settings_switcher_entity_load($entities, $type) {
-  // If Paypal credentials are overriden somewhere, let's use them.
+  // If Paypal credentials are defined somewhere, let's use them.
   if ($type == 'rules_config' && is_array(variable_get('paypal_settings', FALSE))) {
     foreach ($entities as $entity) {
       if (method_exists($entity, 'actions')) {
@@ -22,7 +22,29 @@ function commerce_payment_settings_switcher_entity_load($entities, $type) {
       }
     }
   }
+  // If Stripe credentials are defined somewhere, let's use them.
+  elseif ($type == 'rules_config' && is_array(variable_get('stripe_settings', FALSE))) {
+    $creds = variable_get('stripe_settings', array());
+    foreach ($entities as $entity) {
+      if (method_exists($entity, 'actions') && isset($creds[$entity->name]) && is_array($creds[$entity->name])) {
+        foreach ($entity->actions() as $action) {
+          if ($action instanceof RulesAction && $action->getElementName() == 'commerce_payment_enable_commerce_stripe') {
+            // $action->settings['payment_method']['settings'] is a itarable object.
+            // Can't be merged by classicals ways.
+            if (!is_string($action->settings['payment_method'])) {
+              foreach ($creds[$entity->name] as $key => $value) {
+                $action->settings['payment_method']['settings'][$key] = $value;
+              }
+            }
+            $action->processSettings(TRUE);
+          }
+        }
+      }
+    }
+  }
 }
+
+  
 
 /**
  * Implements hook_commerce_payment_method_info_alter().
@@ -31,6 +53,9 @@ function commerce_payment_settings_switcher_commerce_payment_method_info_alter(&
   if (isset($payment_methods['paypal_wps'])) {
     // Adding a callback method to the Paypal WPS setting form.
     $payment_methods['paypal_wps']['callbacks']['settings_form'] = 'alter_commerce_paypal_wps_settings_form';
+  }
+  elseif (isset($payment_methods['commerce_stripe'])) {
+    $payment_methods['commerce_stripe']['callbacks']['settings_form'] = 'alter_commerce_stripe_settings_form';
   }
 }
 
@@ -58,6 +83,44 @@ function alter_commerce_paypal_wps_settings_form($settings = NULL) {
       '#weight' => 0,
     );
   }
+  return $form;
+}
 
+/**
+ * (Not a hook) Alter the settings form of Commerce Stripe.
+ */
+function alter_commerce_stripe_settings_form($settings = NULL) {
+  $form = commerce_stripe_settings_form($settings);
+  // Terrible hacks. We need the menu context for the Rule we're editing
+  // because we need to apply a certain part of the blimp_stripe_credentials
+  // settings depending on which payment method instance we are a part of.
+
+  // There has GOT to be a better way to do this.
+  $rule = blimp_stripe_payment_rules_context();
+  if (!$rule) {
+    drupal_set_message(t('This cannot happen. You have somehow edited a Stripe payment settings form from outside of a Rules menu router context. Aaa.'), 'error');
+    $rule = (object) array('name' => '_rules_does_not_exist');
+  }
+
+  $display_message = FALSE;
+  $creds = variable_get('blimp_stripe_credentials', array());
+  if (isset($creds[$rule->name]) && is_array($creds[$rule->name])) {
+    foreach ($creds[$rule->name] as $key => $setting) {
+      if (isset($form[$key])) {
+        $form[$key]['#disabled'] = TRUE;
+        $form[$key]['#required'] = FALSE;
+        $display_message = TRUE;
+      }
+    }
+  }
+  if ($display_message) {
+    $form['fields_alert'] = array(
+      '#type' => 'markup',
+      '#prefix' => '<div><b>',
+      '#suffix' => '</b></div>',
+      '#markup' => t('Some fields are defined in your settings.php and can\'t be overidden.'),
+      '#weight' => 0,
+    );
+  }
   return $form;
 }
