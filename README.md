@@ -37,3 +37,9 @@ $conf['stripe_settings'] = array(
   ),
 );
 ```
+
+### Paymill
+
+```
+$conf['paymill_settings']['mode'] = 'test';
+```
