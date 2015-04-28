@@ -41,3 +41,14 @@ $conf['stripe_settings'] = array(
 ```
 $conf['paymill_settings']['mode'] = 'test';
 ```
+
+### Eway
+
+```
+$conf['eway_settings']['eway_testing'] = array(
+  'test_mode' => 1,
+  'live_database' => '',
+  'test_mode_display_msg' => 1,
+  'test_approve_anyway' => 1,
+);
+```
