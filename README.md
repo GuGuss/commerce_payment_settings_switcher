@@ -6,7 +6,7 @@ Drupal Commerce module which allows you to easily switch payment settings based 
 ## Payment settings
 
 ### Paypal
-
+https://www.drupal.org/project/commerce_paypal
 ```
 // sites/default/settings.local.php
 $conf['paypal_settings'] = array(
@@ -24,7 +24,7 @@ $conf['paypal_settings'] = array(
 ```
 
 ### Stripe
-
+https://www.drupal.org/project/commerce_stripe
 ```
 // sites/default/settings.local.php
 $conf['stripe_settings'] = array(
@@ -37,13 +37,13 @@ $conf['stripe_settings'] = array(
 ```
 
 ### Paymill
-
+https://www.drupal.org/project/commerce_paymill
 ```
 $conf['paymill_settings']['mode'] = 'test';
 ```
 
 ### Eway
-
+https://www.drupal.org/project/commerce_eway
 ```
 $conf['eway_settings']['eway_testing'] = array(
   'test_mode' => 1,
