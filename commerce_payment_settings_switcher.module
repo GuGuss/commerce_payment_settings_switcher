@@ -42,6 +42,24 @@ function commerce_payment_settings_switcher_entity_load($entities, $type) {
       }
     }
   }
+  // If Eway settings are defined somewhere, let's use them.
+  elseif ($type == 'rules_config' && is_array(variable_get('eway_settings', FALSE))) {
+    foreach ($entities as $entity) {
+      if (method_exists($entity, 'actions')) {
+        foreach ($entity->actions() as $action) {
+          if ($action instanceof RulesAction && $action->getElementName() == 'commerce_payment_enable_commerce_payment_eway') {
+            // Can't be merged by classicals ways.
+            if (!is_string($action->settings['payment_method'])) {
+              foreach (variable_get('eway_settings', array()) as $key => $value) {
+                $action->settings['payment_method']['settings'][$key] = $value;
+              }
+            }
+            $action->processSettings(TRUE);
+          }
+        }
+      }
+    }
+  }
 }
 
   
