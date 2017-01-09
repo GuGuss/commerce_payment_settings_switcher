@@ -1,6 +1,8 @@
 Commerce Payment Settings Switcher
 ==================================
 
+[Project is now maintained on Drupal.org](https://www.drupal.org/project/commerce_payment_settings_switcher).
+
 Drupal Commerce module which allows you to easily switch payment settings based on environment variables.
 
 ## Payment settings
